@@ -1,0 +1,9 @@
+s	f	o
+Spp_semFamilia	SemFamilia	Synbranchiformes
+Spp_semFamilia2	SemFamilia	Synbranchiformes
+Hypostomus_cochliodon	Loricariidae	Siluriformes
+Crenicichla_britskii	Cichlidae	Cichliformes
+Astyanax_fasciatus	Characidae	Characiformes
+Astyanax_marionae	Characidae	Characiformes
+Pyxiloricaria_menezesi	Loricariidae	Siluriformes
+Rineloricaria_lanceolata	Loricariidae	Siluriformes
