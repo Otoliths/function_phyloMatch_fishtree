@@ -24,10 +24,10 @@ phyloMatch<- function(data){
   filter_rank<- function(ordem){
     if(length(which(sub("_.*", "", unlist(ordem)) == "not.found")) >= 1){
       
-      phy_ord<- fishtree_phylogeny(unlist(ordem)[-which(sub("_.*", "", unlist(ordem)) == "not.found")])
+      phy_ord<- fishtree::fishtree_phylogeny(unlist(ordem)[-which(sub("_.*", "", unlist(ordem)) == "not.found")])
       
     } else{
-      phy_ord<- fishtree_phylogeny(unlist(ordem))
+      phy_ord<- fishtree::fishtree_phylogeny(unlist(ordem))
     }
     phy_ord
   }
@@ -60,14 +60,21 @@ phyloMatch<- function(data){
   phylo_order<- phytools::force.ultrametric(tree = phylo_order)
   
   #species that must be added in the first step of the procedure
-  species_to_genre<- unique(insert_spp[match(sub("_.*", "", phylo_order$tip.label), 
-                                             sub("_.*", "", insert_spp))[!is.na(match(sub("_.*", "", phylo_order$tip.label),
-                                                                                      sub("_.*", "", insert_spp)
-                                                                                      )
-                                                                                )
-                                                                         ]
-                                       ]
-                            )  #genre that must be added
+  genres_in_tree<- sub("_.*", "", 
+                       phylo_order$tip.label)[match(sub("_.*", "", 
+                                                        insert_spp), 
+                                                    sub("_.*", "", 
+                                                        phylo_order$tip.label))][!is.na(sub("_.*", "", 
+                                                                                            phylo_order$tip.label)[match(sub("_.*", "", 
+                                                                                                                             insert_spp), 
+                                                                                                                         sub("_.*", "", 
+                                                                                                                             phylo_order$tip.label)
+                                                                                            )
+                                                                                            ]
+                                                        )
+                                                        ]
+  species_to_genre<- insert_spp[which(is.na(insert_spp[match(sub("_.*", "", insert_spp), genres_in_tree)]) == FALSE)]
+  #genre that must be added
   
   
   #######solving problem 1, first step - add genus
@@ -101,8 +108,8 @@ phyloMatch<- function(data){
   #in the phylogeny
   
   data_exRoundFamily<- data[unique(unlist(lapply(as.character(data_exRound2$f), 
-                                                    function(x) which(x == as.character(data$f)
-                                                    )
+                                                 function(x) which(x == as.character(data$f)
+                                                 )
   )
   )
   )
@@ -159,8 +166,8 @@ phyloMatch<- function(data){
       }
       
       data_exRound3<- data_exRound2[1:unlist(lapply(lapply(list_spp_step2, 
-                                                                 function(x) 
-                                                                   which(sub("_.*", "", x) == "noFamily")
+                                                           function(x) 
+                                                             which(sub("_.*", "", x) == "noFamily")
       ), 
       function(y) length(y)
       )
@@ -170,18 +177,41 @@ phyloMatch<- function(data){
       spp_to_add_round2<- setdiff(data_exRound2$s, data_exRound3$s)
     }
   }
- 
+  
   ######step 3 - add species to orders######
   species_order_inTree<- !is.na(match(data$s, 
-                                ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) #species that are already on the tree
+                                      ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) #species that are already on the tree
   spp_orderTree<- phylo_order$tip.label[species_order_inTree] #species names from orders of species that must be added
   spp_to_add_round3<- as.character(data_exRound3$s) #species that must be added
   if(dim(data_exRound3)[1] >= 1){
     if(sum(species_order_inTree) <= 1){ #is ther any species of this order already inserted in the phylogenetic tree?
-      for(i in 1:dim(data_exRound3)[1]){
-        #i= 2
-        phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
-                               where = which(phylo_order$node.label == data_exRound3$o[i]))
+      if(dim(data_exRound3)[1] <= 2){
+        for(i in 1:dim(data_exRound3)[1]){
+          #i= 1
+          phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
+                                 where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
+        } 
+      } else{
+        for(i in 1:2){
+          #i= 1
+          phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
+                                 where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
+        }
+        species_order_inTree<- !is.na(match(data$s, 
+                                            ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) #species that are already on the tree
+        spp_orderTree<- phylo_order$tip.label[species_order_inTree]
+        for(m in 3:dim(data_exRound3)){
+          local_to_add_spp<- readline(prompt = print_cat(print_cat = species_order_inTree, spp = spp_to_add_round3[m])) #user interactive option to choose species
+          phylo_order<- phytools::add.species.to.genus(tree = phylo_order, 
+                                                       species = paste(sub("_.*", "", as.character(local_to_add_spp))
+                                                                       , "toadd", sep= "_"
+                                                       )
+          )
+          position_problem3<- which(phylo_order$tip.label == paste(sub("_.*", "", as.character(local_to_add_spp)),
+                                                                   "toadd", sep= "_")
+          )
+          phylo_order$tip.label[position_problem3]<- spp_to_add_round3[m] #solving problem 2 and 3 to insert species in family and/or genre
+        }
       }
     } else{
       for(l in 1:length(spp_to_add_round3)){
@@ -201,9 +231,11 @@ phyloMatch<- function(data){
   } else{
     tree_res<- ape::drop.tip(phy = phylo_order, tip = treedata_modif(phy = phylo_order, data = data$s)$nc$data_not_tree)
   }
-
+  
   data_final<- 1:length(as.character(data$s))
   names(data_final)<- as.character(data$s)
-  tree_res<- ape::drop.tip(phy = phylo_order, tip = treedata_modif(phy = phylo_order, data = data_final)$nc$tree_not_data)
+  tree_res<- suppressWarnings(ape::drop.tip(phy = phylo_order, 
+                                            tip = treedata_modif(phy = phylo_order, data = data_final)$nc$tree_not_data)
+                              )
   tree_res #phylogeny with only species on data
 }
