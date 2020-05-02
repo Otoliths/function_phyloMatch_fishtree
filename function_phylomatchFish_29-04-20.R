@@ -48,7 +48,7 @@ phyloMatch<- function(data){
   #naming node family in phylo order
   for( i in 1:length(list_family)){
     temp<- list_family[[i]]
-    phylo_temp<- ape::drop.tip(phy = phylo_order,  setdiff(phylo_order$tip.label, temp))
+    phylo_temp<- suppressWarnings(ape::drop.tip(phy = phylo_order,  setdiff(phylo_order$tip.label, temp)))
     node_ordem<- phylo_temp$node.label[1]
     phylo_order$node.label[which(phylo_order$node.label == node_ordem)]<- paste(rank_family[i])
   }
@@ -179,8 +179,9 @@ phyloMatch<- function(data){
   }
   
   ######step 3 - add species to orders######
-  species_order_inTree<- !is.na(match(data$s, 
-                                      ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) #species that are already on the tree
+  species_order_inTree<-match(data$s, 
+                              ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)[which(!is.na(match(data$s, 
+                                                                                                                                                ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) == T)] #species that are already on the tree
   spp_orderTree<- phylo_order$tip.label[species_order_inTree] #species names from orders of species that must be added
   spp_to_add_round3<- as.character(data_exRound3$s) #species that must be added
   if(dim(data_exRound3)[1] >= 1){
@@ -192,25 +193,17 @@ phyloMatch<- function(data){
                                  where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
         } 
       } else{
-        for(i in 1:2){
-          #i= 1
-          phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
-                                 where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
+        #if there is only one order that species must be added
+        user_option_spp2<- print_cat2(spp_to_add_round3)
+        if(ape::is.phylo(user_option)){
+          phylo_order<- ape::bind.tree(x = phylo_order, y = user_option_spp2, 
+                                       where = which(phylo_order$node.label == as.character(data_exRound3$o[1])) + 1) #adding the multiple species according to newick file
         }
-        species_order_inTree<- !is.na(match(data$s, 
-                                            ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) #species that are already on the tree
-        spp_orderTree<- phylo_order$tip.label[species_order_inTree]
-        for(m in 3:dim(data_exRound3)){
-          local_to_add_spp<- readline(prompt = print_cat(print_cat = species_order_inTree, spp = spp_to_add_round3[m])) #user interactive option to choose species
-          phylo_order<- phytools::add.species.to.genus(tree = phylo_order, 
-                                                       species = paste(sub("_.*", "", as.character(local_to_add_spp))
-                                                                       , "toadd", sep= "_"
-                                                       )
-          )
-          position_problem3<- which(phylo_order$tip.label == paste(sub("_.*", "", as.character(local_to_add_spp)),
-                                                                   "toadd", sep= "_")
-          )
-          phylo_order$tip.label[position_problem3]<- spp_to_add_round3[m] #solving problem 2 and 3 to insert species in family and/or genre
+        if(user_option_spp2 == "politomy"){
+          for(k in 1:length(spp_to_add_round3)){
+            phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[k], 
+                                   where = which(phylo_order$node.label == as.character(data_exRound3$o[k])) + 1)
+          }
         }
       }
     } else{
@@ -232,10 +225,11 @@ phyloMatch<- function(data){
     tree_res<- ape::drop.tip(phy = phylo_order, tip = treedata_modif(phy = phylo_order, data = data$s)$nc$data_not_tree)
   }
   
+  #final data proccessing - cutting the phylogenetic tree to obtain only species in data
   data_final<- 1:length(as.character(data$s))
   names(data_final)<- as.character(data$s)
   tree_res<- suppressWarnings(ape::drop.tip(phy = phylo_order, 
                                             tip = treedata_modif(phy = phylo_order, data = data_final)$nc$tree_not_data)
-                              )
+  )
   tree_res #phylogeny with only species on data
 }
