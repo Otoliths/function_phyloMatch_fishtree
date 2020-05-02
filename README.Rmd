@@ -1,0 +1,30 @@
+# function_phyloMatch_fishtree
+R function to extract fish species from fishtree package and replace them based on a local species pool
+
+#How it works
+The user must first read the following auxiliar functions
+
+```{r read_fun, include= TRUE}
+
+source("function_treedata_modif.R")
+source("user_opt_printCat.R")
+source("user_opt_printCat2.R")
+source("function_phylomatchFish_29-04-20.R")
+library(ape)
+library(phytools)
+library(geiger)
+library(fishtree)
+
+```
+
+The phyloMatch function work in a sequential way by download the [most inclusive phylogeny of bony fishes](https://fishtreeoflife.org/) and replacing and dropping the fish species on the original phylogeny to obtain a phylogeny containing only the desired species specified in a data frame. The procedure starts by adding all species of fish that already present any genre in the tree. For those species that do not present any genre, the function finds out for all species of the same family of the species that must be inserted. By an interactivelly procedure, the user must specify which species from that family in the tree the species to be inserted is most related. Finally, for those species that do not present any family representatives in the tree their inclusion is made by searching for the species of the same order presented in the original tree. If any, the functions asks the user to provide a newick file to be binded to the tree or to insert the species as politomies in the order of species. The function returns a newick file containing the phylogeny of species providade in data argument.
+
+The user must provide to phyloMatch function only a data frame that present the following format
+
+```{r data_ex, echo= FALSE}
+data_ex<- read.table("data_ex.txt", header= T)
+
+#running the example
+phyloMatch(data_ex)
+```
+
