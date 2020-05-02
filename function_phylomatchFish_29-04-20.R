@@ -6,7 +6,7 @@ phyloMatch<- function(data){
   list_ordem<- vector(mode = "list", length= length(rank_order))
   list_family<- vector(mode = "list", length= length(rank_family))
   
-  #filtering all species names within orders
+  #filtering all species names within orders presented in the original phylogeny
   for(i in 1:length(rank_order)){
     list_ordem[[i]]<- tryCatch(paste(print(fishtree::fishtree_phylogeny(rank = rank_order[i], type = "chronogram_mrca")$tip.label)),
                                error = function(e) paste(print(rank_order[i]))
@@ -128,7 +128,7 @@ phyloMatch<- function(data){
   spp_to_add_round2<- setdiff(data_exRound2$s, data_exRound3$s)
   user_option_spp<- spp_family_inTree
   ####initializing the insertion of species that present representatives species in family level
-  if(spp_family_inTree == 1){
+  if(length(spp_family_inTree) == 1){
     phylo_order<- phytools::add.species.to.genus(tree = phylo_order, 
                                                  species = paste(sub("_.*", "", as.character(spp_family_inTree)[1])
                                                                  , "toadd", sep= "_"
@@ -152,8 +152,8 @@ phyloMatch<- function(data){
       phylo_order$tip.label[position_problem2]<- spp_to_add_round2[1] #solving problem 2 and 3 to insert species in family and/or genre
       
       #running again the check procedure
-      rank_family2<- as.character(data[match(insert_spp2, as.character(data$s)),2])
       insert_spp2<- treedata_modif(phy = phylo_order, data = spp_data, warnings = F)$nc$data_not_tree #species that must be added after step 1
+      rank_family2<- as.character(data[match(insert_spp2, as.character(data$s)),2])
       data_exRound2<- data[match(insert_spp2, as.character(data$s)),]
       list_spp_step2<- vector(mode = "list", length= length(unique(rank_family2)))
       for(i in 1:length(unique(rank_family2))){
@@ -179,9 +179,9 @@ phyloMatch<- function(data){
   }
   
   ######step 3 - add species to orders######
-  species_order_inTree<-match(data$s, 
-                              ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)[which(!is.na(match(data$s, 
-                                                                                                                                                ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) == T)] #species that are already on the tree
+  species_order_inTree<- match(data$s, 
+                               ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)[which(!is.na(match(data$s, 
+                                                                                                                                                 ape::extract.clade(phy = phylo_order, node = unique(as.character(data_exRound3$o)))$tip.label)) == T)] #species that are already on the tree
   spp_orderTree<- phylo_order$tip.label[species_order_inTree] #species names from orders of species that must be added
   spp_to_add_round3<- as.character(data_exRound3$s) #species that must be added
   if(dim(data_exRound3)[1] >= 1){
@@ -189,8 +189,8 @@ phyloMatch<- function(data){
       if(dim(data_exRound3)[1] <= 2){
         for(i in 1:dim(data_exRound3)[1]){
           #i= 1
-          phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
-                                 where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
+          phylo_order<- phytools::bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[i], 
+                                           where = which(phylo_order$node.label == as.character(data_exRound3$o[i])) + 1)
         } 
       } else{
         #if there is only one order that species must be added
@@ -201,8 +201,8 @@ phyloMatch<- function(data){
         }
         if(user_option_spp2 == "politomy"){
           for(k in 1:length(spp_to_add_round3)){
-            phylo_order<- bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[k], 
-                                   where = which(phylo_order$node.label == as.character(data_exRound3$o[k])) + 1)
+            phylo_order<- phytools::bind.tip(tree = phylo_order, tip.label = as.character(data_exRound3$s)[k], 
+                                             where = which(phylo_order$node.label == as.character(data_exRound3$o[k])) + 1)
           }
         }
       }
